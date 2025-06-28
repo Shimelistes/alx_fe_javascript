@@ -1,16 +1,16 @@
-// Load quotes from localStorage or default if none
+// Load quotes from localStorage or initialize with defaults
 let quotes = JSON.parse(localStorage.getItem("quotes")) || [
   { text: "HTML is the basic for web application", category: "Front-end" },
   { text: "Node is the fundamental for connection", category: "Back-end" },
   { text: "Work as front-end and back-end together at once", category: "Fullstack" }
 ];
 
-// Save quotes to localStorage
+// Save quotes array to localStorage
 function saveQuotes() {
   localStorage.setItem("quotes", JSON.stringify(quotes));
 }
 
-// Show a random quote and store last viewed index in sessionStorage
+// Show a random quote and save last shown index to sessionStorage
 function showRandomQuote() {
   const quoteDisplay = document.getElementById("quoteDisplay");
   quoteDisplay.innerHTML = "";
@@ -32,10 +32,11 @@ function showRandomQuote() {
   quoteDisplay.appendChild(quoteText);
   quoteDisplay.appendChild(categoryText);
 
+  // Save last viewed quote index in sessionStorage
   sessionStorage.setItem("lastQuoteIndex", randomIndex);
 }
 
-// Create the add-quote form and handle submissions
+// Create and handle add-quote form
 function createAddQuoteForm() {
   const formDiv = document.createElement("div");
   formDiv.id = "form-quote";
@@ -72,7 +73,7 @@ function createAddQuoteForm() {
 
     if (text && category) {
       quotes.push({ text, category });
-      saveQuotes();
+      saveQuotes();  // <=== Save quotes immediately after adding
       textInput.value = "";
       categoryInput.value = "";
       alert("Quote added successfully!");
@@ -82,7 +83,7 @@ function createAddQuoteForm() {
   });
 }
 
-// Export quotes to JSON file
+// Export quotes as JSON file
 function exportQuotes() {
   const dataStr = JSON.stringify(quotes, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });
@@ -108,7 +109,7 @@ function importFromJsonFile(event) {
       if (Array.isArray(importedQuotes)) {
         const validQuotes = importedQuotes.filter(q => q.text && q.category);
         quotes.push(...validQuotes);
-        saveQuotes();
+        saveQuotes();  // <=== Save after importing
         alert("Quotes imported successfully!");
       } else {
         alert("Invalid JSON format: Expected an array of quotes.");
@@ -119,11 +120,11 @@ function importFromJsonFile(event) {
   };
   reader.readAsText(file);
 
-  // Reset input to allow importing same file again if needed
+  // Clear input so same file can be imported again if needed
   event.target.value = "";
 }
 
-// Restore the last viewed quote from sessionStorage if available
+// Restore last viewed quote on page load using sessionStorage
 function restoreLastQuote() {
   const lastIndex = sessionStorage.getItem("lastQuoteIndex");
   if (lastIndex !== null && quotes[lastIndex]) {
@@ -142,17 +143,15 @@ function restoreLastQuote() {
   }
 }
 
-// Create import/export UI elements and attach handlers
+// Create Import and Export UI controls
 function createImportExportUI() {
   const container = document.createElement("div");
   container.style.marginTop = "20px";
 
-  // Export button
   const exportBtn = document.createElement("button");
   exportBtn.textContent = "Export Quotes";
   exportBtn.addEventListener("click", exportQuotes);
 
-  // Import file input
   const importInput = document.createElement("input");
   importInput.type = "file";
   importInput.accept = ".json";
@@ -166,7 +165,7 @@ function createImportExportUI() {
   document.body.appendChild(container);
 }
 
-// Initialize on DOM content loaded
+// Initialize everything on DOMContentLoaded
 document.addEventListener("DOMContentLoaded", () => {
   createAddQuoteForm();
 
