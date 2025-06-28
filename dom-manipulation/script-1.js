@@ -85,7 +85,7 @@ function createAddQuoteForm() {
 }
 
 // Export quotes as a downloadable JSON file
-function exportQuotes() {
+function exportToJsonFile() {
   const dataStr = JSON.stringify(quotes, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -150,7 +150,7 @@ function createImportExportUI() {
   // Export button
   const exportBtn = document.createElement("button");
   exportBtn.textContent = "Export Quotes";
-  exportBtn.addEventListener("click", exportQuotes);
+  exportBtn.addEventListener("click", exportToJsonFile);
   document.body.appendChild(exportBtn);
 
   // Import file input
@@ -171,7 +171,27 @@ document.addEventListener("DOMContentLoaded", function () {
   if (showBtn) {
     showBtn.addEventListener("click", showRandomQuote);
   }
-
   createImportExportUI();
   restoreLastQuote();
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
