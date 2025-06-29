@@ -178,7 +178,7 @@ function importFromJsonFile(event) {
 }
 
 // Fetch quotes from server (mock API)
-async function fetchRemoteQuotes() {
+async function fetchQuotesFromServer() {
   try {
     const response = await fetch("https://jsonplaceholder.typicode.com/posts?_limit=5");
     const posts = await response.json();
@@ -248,7 +248,7 @@ function notifyUser(message) {
 
 // Start periodic sync
 function startAutoSync(interval = 30000) {
-  setInterval(fetchRemoteQuotes, interval);
+  setInterval(fetchQuotesFromServer, interval);
 }
 
 // Initialize App
@@ -285,5 +285,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Start syncing every 30 seconds
+  fetchQuotesFromServer();
   startAutoSync(30000);
 });
