@@ -5,14 +5,10 @@ let quotes = JSON.parse(localStorage.getItem("quotes")) || [
   { text: "Work as front-end and back-end together at once", category: "Fullstack" }
 ];
 
-// Track last synced time
-let lastSyncTime = parseInt(localStorage.getItem("lastSyncTime")) || Date.now();
-
 // Save quotes to localStorage
 function saveQuotes() {
   localStorage.setItem("quotes", JSON.stringify(quotes));
   localStorage.setItem("lastSyncTime", Date.now());
-  lastSyncTime = Date.now();
 }
 
 // Show a random quote from filtered results
@@ -126,8 +122,10 @@ function createAddQuoteForm() {
     const category = categoryInput.value.trim();
 
     if (text && category) {
-      quotes.push({ text, category });
+      const newQuote = { text, category };
+      quotes.push(newQuote);
       saveQuotes();
+      postQuoteToServer(newQuote);
       populateCategories();
       filterQuotes();
       alert("Quote added successfully!");
@@ -217,18 +215,35 @@ function mergeQuotes(remoteQuotes) {
   }
 }
 
-// Notify user via simple alert or modal
+// Post new quote to server
+async function postQuoteToServer(quote) {
+  try {
+    const response = await fetch(" https://jsonplaceholder.typicode.com/posts ", {
+      method: "POST",
+      body: JSON.stringify({
+        title: quote.text,
+        body: quote.category,
+        userId: 1
+      }),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8"
+      }
+    });
+    const data = await response.json();
+    console.log("Posted to server:", data);
+  } catch (error) {
+    console.error("Failed to post to server:", error);
+  }
+}
+
+// Notify user via simple notification
 function notifyUser(message) {
   const notification = document.getElementById("notification");
-  if (notification) {
-    notification.textContent = message;
-    notification.style.display = "block";
-    setTimeout(() => {
-      notification.style.display = "none";
-    }, 5000);
-  } else {
-    alert(message);
-  }
+  notification.textContent = message;
+  notification.style.display = "block";
+  setTimeout(() => {
+    notification.style.display = "none";
+  }, 5000);
 }
 
 // Start periodic sync

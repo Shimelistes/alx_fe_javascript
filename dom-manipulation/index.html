@@ -18,7 +18,7 @@
       margin-bottom: 20px;
       font-size: 1.2em;
     }
-    input, textarea, button {
+    input, textarea, button, select {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -29,10 +29,26 @@
       display: block;
       margin-top: 5px;
     }
+    #notification {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 10px;
+      margin-top: 10px;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <h1>Dynamic Quote Generator</h1>
+
+  <!-- Notification -->
+  <div id="notification"></div>
+
+  <!-- Filter Dropdown -->
+  <label for="categoryFilter">Filter by Category:</label>
+  <select id="categoryFilter" onchange="filterQuotes()">
+    <option value="all">All Categories</option>
+  </select>
 
   <!-- Display Area -->
   <div id="quoteDisplay"></div>
