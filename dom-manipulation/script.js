@@ -5,9 +5,14 @@ let quotes = JSON.parse(localStorage.getItem("quotes")) || [
   { text: "Work as front-end and back-end together at once", category: "Fullstack" }
 ];
 
+// Track last synced time
+let lastSyncTime = parseInt(localStorage.getItem("lastSyncTime")) || Date.now();
+
 // Save quotes to localStorage
 function saveQuotes() {
   localStorage.setItem("quotes", JSON.stringify(quotes));
+  localStorage.setItem("lastSyncTime", Date.now());
+  lastSyncTime = Date.now();
 }
 
 // Show a random quote from filtered results
@@ -32,11 +37,10 @@ function showRandomQuote(filteredQuotes = quotes) {
   quoteDisplay.appendChild(quoteText);
   quoteDisplay.appendChild(categoryText);
 
-  // Store last viewed quote index in session storage
   sessionStorage.setItem("lastQuoteIndex", quotes.indexOf(quote));
 }
 
-// Restore last viewed quote from sessionStorage
+// Restore last viewed quote
 function restoreLastQuote() {
   const lastIndex = sessionStorage.getItem("lastQuoteIndex");
   if (lastIndex !== null && quotes[lastIndex]) {
@@ -55,7 +59,7 @@ function restoreLastQuote() {
   }
 }
 
-// Populate categories in the dropdown
+// Populate categories in dropdown
 function populateCategories() {
   const categoryFilter = document.getElementById("categoryFilter");
   categoryFilter.innerHTML = '<option value="all">All Categories</option>';
@@ -69,7 +73,6 @@ function populateCategories() {
     categoryFilter.appendChild(option);
   });
 
-  // Restore last selected filter
   const savedFilter = localStorage.getItem("lastSelectedCategory") || "all";
   categoryFilter.value = savedFilter;
 }
@@ -87,7 +90,7 @@ function filterQuotes() {
   }
 }
 
-// Create form dynamically to add new quotes
+// Create Add Quote Form
 function createAddQuoteForm() {
   const formDiv = document.createElement("div");
   formDiv.id = "form-quote";
@@ -125,10 +128,8 @@ function createAddQuoteForm() {
     if (text && category) {
       quotes.push({ text, category });
       saveQuotes();
-      populateCategories(); // Update category list
-      textInput.value = "";
-      categoryInput.value = "";
-      filterQuotes(); // Reapply current filter
+      populateCategories();
+      filterQuotes();
       alert("Quote added successfully!");
     } else {
       alert("Please enter both quote text and category.");
@@ -136,7 +137,7 @@ function createAddQuoteForm() {
   });
 }
 
-// Export quotes to JSON file
+// Export Quotes
 function exportQuotes() {
   const dataStr = JSON.stringify(quotes, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });
@@ -150,7 +151,7 @@ function exportQuotes() {
   URL.revokeObjectURL(url);
 }
 
-// Import quotes from JSON file
+// Import Quotes
 function importFromJsonFile(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -163,8 +164,8 @@ function importFromJsonFile(event) {
         const validQuotes = importedQuotes.filter(q => q.text && q.category);
         quotes.push(...validQuotes);
         saveQuotes();
-        populateCategories(); // Update category list
-        filterQuotes(); // Reapply current filter
+        populateCategories();
+        filterQuotes();
         alert(`${validQuotes.length} quote(s) imported successfully!`);
       } else {
         alert("Invalid JSON format: Expected an array of quotes.");
@@ -175,15 +176,78 @@ function importFromJsonFile(event) {
   };
   reader.readAsText(file);
 
-  // Reset input to allow importing same file again
   event.target.value = "";
+}
+
+// Fetch quotes from server (mock API)
+async function fetchRemoteQuotes() {
+  try {
+    const response = await fetch("https://jsonplaceholder.typicode.com/posts?_limit=5");
+    const posts = await response.json();
+
+    // Convert posts to quote-like objects
+    const remoteQuotes = posts.map(post => ({
+      text: post.title,
+      category: "Server"
+    }));
+
+    mergeQuotes(remoteQuotes);
+  } catch (error) {
+    console.error("Failed to fetch from server:", error);
+  }
+}
+
+// Merge remote data with local data (server wins strategy)
+function mergeQuotes(remoteQuotes) {
+  const existingTexts = new Set(quotes.map(q => q.text));
+
+  let newQuotes = 0;
+  remoteQuotes.forEach(remoteQuote => {
+    if (!existingTexts.has(remoteQuote.text)) {
+      quotes.push(remoteQuote);
+      newQuotes++;
+    }
+  });
+
+  if (newQuotes > 0) {
+    saveQuotes();
+    populateCategories();
+    notifyUser(`✅ ${newQuotes} new quote(s) downloaded from the server.`);
+    filterQuotes(); // Refresh display
+  }
+}
+
+// Notify user via simple alert or modal
+function notifyUser(message) {
+  const notification = document.getElementById("notification");
+  if (notification) {
+    notification.textContent = message;
+    notification.style.display = "block";
+    setTimeout(() => {
+      notification.style.display = "none";
+    }, 5000);
+  } else {
+    alert(message);
+  }
+}
+
+// Start periodic sync
+function startAutoSync(interval = 30000) {
+  setInterval(fetchRemoteQuotes, interval);
 }
 
 // Initialize App
 document.addEventListener("DOMContentLoaded", () => {
-  createAddQuoteForm(); // Add the quote form
+  const notifyDiv = document.createElement("div");
+  notifyDiv.id = "notification";
+  notifyDiv.style.background = "#d4edda";
+  notifyDiv.style.padding = "10px";
+  notifyDiv.style.marginTop = "10px";
+  notifyDiv.style.display = "none";
+  document.body.appendChild(notifyDiv);
 
-  // Attach click handler to show new quote
+  createAddQuoteForm();
+
   document.getElementById("newQuote").addEventListener("click", () => {
     const selectedCategory = document.getElementById("categoryFilter").value;
     if (selectedCategory === "all") {
@@ -194,13 +258,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Populate categories
   populateCategories();
-
-  // Restore last viewed quote
   restoreLastQuote();
 
-  // Apply last selected filter
   const savedFilter = localStorage.getItem("lastSelectedCategory") || "all";
   if (savedFilter !== "all") {
     const filtered = quotes.filter(q => q.category === savedFilter);
@@ -208,4 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     showRandomQuote();
   }
+
+  // Start syncing every 30 seconds
+  startAutoSync(30000);
 });
