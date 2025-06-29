@@ -177,41 +177,39 @@ function importFromJsonFile(event) {
   event.target.value = "";
 }
 
-// Fetch quotes from server (mock API)
-async function fetchQuotesFromServer() {
+// Sync local data with server
+async function syncQuotes() {
   try {
+    // Step 1: Fetch remote quotes
     const response = await fetch("https://jsonplaceholder.typicode.com/posts?_limit=5");
     const posts = await response.json();
 
-    // Convert posts to quote-like objects
     const remoteQuotes = posts.map(post => ({
       text: post.title,
       category: "Server"
     }));
 
-    mergeQuotes(remoteQuotes);
-  } catch (error) {
-    console.error("Failed to fetch from server:", error);
-  }
-}
+    // Step 2: Merge with local quotes
+    const existingTexts = new Set(quotes.map(q => q.text));
+    let newQuotes = 0;
 
-// Merge remote data with local data (server wins strategy)
-function mergeQuotes(remoteQuotes) {
-  const existingTexts = new Set(quotes.map(q => q.text));
+    remoteQuotes.forEach(remoteQuote => {
+      if (!existingTexts.has(remoteQuote.text)) {
+        quotes.push(remoteQuote);
+        newQuotes++;
+      }
+    });
 
-  let newQuotes = 0;
-  remoteQuotes.forEach(remoteQuote => {
-    if (!existingTexts.has(remoteQuote.text)) {
-      quotes.push(remoteQuote);
-      newQuotes++;
+    // Step 3: Update local storage and notify user
+    if (newQuotes > 0) {
+      saveQuotes();
+      populateCategories();
+      notifyUser(`✅ ${newQuotes} new quote(s) downloaded from the server.`);
+      filterQuotes();
     }
-  });
 
-  if (newQuotes > 0) {
-    saveQuotes();
-    populateCategories();
-    notifyUser(`✅ ${newQuotes} new quote(s) downloaded from the server.`);
-    filterQuotes(); // Refresh display
+  } catch (error) {
+    console.error("Sync failed:", error);
   }
 }
 
@@ -226,7 +224,7 @@ async function postQuoteToServer(quote) {
         userId: 1
       }),
       headers: {
-        "Content-type": "application/json; charset=UTF-8"
+        "Content-Type": "application/json; charset=UTF-8"
       }
     });
     const data = await response.json();
@@ -248,7 +246,7 @@ function notifyUser(message) {
 
 // Start periodic sync
 function startAutoSync(interval = 30000) {
-  setInterval(fetchQuotesFromServer, interval);
+  setInterval(syncQuotes, interval);
 }
 
 // Initialize App
@@ -285,6 +283,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Start syncing every 30 seconds
-  fetchQuotesFromServer();
+  syncQuotes();
   startAutoSync(30000);
 });
